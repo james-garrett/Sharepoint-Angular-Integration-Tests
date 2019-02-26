@@ -5,22 +5,33 @@
             <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
             <!-- <script src="controllers/contractRendererController.js"></script> -->
             <link rel="stylesheet" type="text/css" href="css/contractStyle.css" />
+            
+            <!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script> -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
     </head>
 <body>  
-    <div ng-app="mainApp" ng-controller="contractRendererController" ng-init="">  
+    <div ng-app="mainApp" ng-controller="contractRendererController" ng-init="" class="container">  
         <br>  
-            <div id="contract">
+            <div id="contract" class="row">
+                <!-- <div class="col-sm-2"></div> -->
                 <ul style="list-style: none;">
-                    <div ng-repeat="item in list track by item.ID">
-                    <li ng-if="!itemIsSubsection(item.SubSectionNo)"><h1>{{item.SectionNo}}{{item.SubSectionNo}}    <b>{{item.Title}}</b></h1></li>
+                    <div ng-repeat="item in list track by item.ID" class="col-sm-8" id="contractBody">
+                    <li ng-if="!itemIsSubsection(item.SubSectionNo)"><h1>{{item.SectionNo}}{{item.SubSectionNo}}    <b>{{item.Title}}</b></h1>
+                        <p>{{item.SectionText}}</p></li>
                         <li ng-if="itemIsSubsection(item.SubSectionNo)"><h2> 
                             {{item.SectionNo}}{{item.SubSectionNo}}    {{item.Title}}
                         </h2>
                         
                             <!-- <p ng-if="{{images[$index]}}">{{images[$index].link}}</p> -->
                             <img ng-if="getAssociatedImages($index)" id="sectionImg" ng-src="{{getAssociatedImages($index)}}"></img>
-                        <!-- </div> -->
-                        <p>{{item.SectionText}}</p>
+                            <p>{{item.SectionText}}</p>
+                        </div>
+                        <!-- <div class="col-sm-2"></div> -->
                     </ul>
                 </div> 
             </div>
@@ -55,6 +66,48 @@ function contractRendererController($scope) {
                 }
             } else{ 
                 return 0;
+            }
+        }
+
+        var sortListResults = function(list) {
+            list.sort(dynamicSortMultiple(["SectionNo", "SubSectionNo"]));
+            // list.sort(dynamicSort("SectionNo", 1));
+            console.log(list);
+            return list;
+        }
+        
+        var dynamicSort = function(property, sortOrder) { 
+            /*Default sortOrder is 1 */
+            return function(a, b) {
+                // console.log(a[property], b[property]);
+                var result = (a[property] < b[property]) ? -1: (a[property] > b[property]) ? 1 : 0;
+                return result * sortOrder;
+            }
+        }
+
+        // return function(c, d) {
+        //                 console.log(c);
+        //                 console.log(c[args[i]], d[args[i]]);
+        //                 if(c[args[i]] == d[args[i]] && i < numberOfProperties) {
+        //                  console.log("Matching vals");
+        //                     i++;
+        //                 }
+        //                 var result = (c[args[i]] < d[args[i]]) ? -1: (c[args[i]] > d[args[i]]) ? 1 : 0;
+        //                 return result * sortOrder;
+        //             }
+
+        var dynamicSortMultiple = function(properties) { 
+            /*Default sortOrder is 1 */
+            var args = properties;
+            return function(a, b) {
+                var i = 0, result =0, numberOfProperties = args.length;
+                // console.log(numberOfProperties);
+                while(result === 0 && i < numberOfProperties) {
+                    // console.log(a[args[i]]);
+                    result = dynamicSort(args[i], 1)(a, b);
+                    i++;
+                }
+                return result;
             }
         }
 
@@ -110,7 +163,8 @@ function contractRendererController($scope) {
             // console.log("win");
             // console.log(data);
             $scope.$apply(function() {
-                $scope.list = processListResults(data);
+                $scope.list = sortListResults(processListResults(data));
+                console.log($scope.list);
             });
             // console.log($scope.list);
             return $scope.list;
@@ -186,4 +240,16 @@ function contractRendererController($scope) {
     // }
 // );
 </script>
+
+<style>
+    #sectionImg {
+    width: 100%;
+    height: 100%;
+    }
+
+    #contractBody {
+        background-color: #ddbea0;
+        max-width: 100%;
+    }
+</style>
 </html> 
