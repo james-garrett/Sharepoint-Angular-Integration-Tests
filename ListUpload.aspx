@@ -3,124 +3,187 @@
     <head>
             <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js"></script>  
             <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+            <!-- <script src="controllers/contractRendererController.js"></script> -->
+            <link rel="stylesheet" type="text/css" href="css/contractStyle.css" />
     </head>
 <body>  
-    <div ng-app="mainApp" ng-controller="listHandlerController" ng-init="">  
-        <!--ng-model binds the input field to the controller property firstName-->  
-        First Name: <input type="text" ng-model="user.firstName"><br>  
-        <!--ng-model binds the input field to the controller property lastName-->  
-        Last Name: <input type="text" ng-model="user.lastName"><br>  
+    <div ng-app="mainApp" ng-controller="contractRendererController" ng-init="">  
         <br>  
-        <!--{{}} AngularJS expression-->  
-        <!-- {{ getData() }} -->
-        <!-- <div> hi {{list = getData();""}}  -->
-            <!-- {{getData()}} -->
-            <p ng-repeat="item in list">p{{item}}</p> 
-        <!-- </div> -->
-        <!-- Welcome {{fullName()}}   -->
-        <!-- {{ returnData() }} -->
-    </div>  
-  
-    <script>
-        var mainApp = angular.module("mainApp", []);  
-           
-        mainApp.controller("listHandlerController", function($scope, $q) {  
-            var user = { firstName: "", lastName: ""};  
-            // $scope.list = ["1", "2"];
-            $scope.list = [];
-            console.log("hello world");
-            
-                    
-        $scope.fullName = function() {  
-            var x = $scope.user;  
-            return x.firstName + " " + x.lastName;  
-        }  
+            <div id="contract">
+                <ul style="list-style: none;">
+                    <div ng-repeat="item in list track by item.ID">
+                    <li ng-if="!itemIsSubsection(item.SubSectionNo)"><h1>{{item.SectionNo}}{{item.SubSectionNo}}    <b>{{item.Title}}</b></h1></li>
+                        <li ng-if="itemIsSubsection(item.SubSectionNo)"><h2> 
+                            {{item.SectionNo}}{{item.SubSectionNo}}    {{item.Title}}
+                        </h2>
+                        
+                            <!-- <p ng-if="{{images[$index]}}">{{images[$index].link}}</p> -->
+                            <img ng-if="getAssociatedImages($index)" id="sectionImg" ng-src="{{getAssociatedImages($index)}}"></img>
+                        <!-- </div> -->
+                        <p>{{item.SectionText}}</p>
+                    </ul>
+                </div> 
+            </div>
+    </div>    
+</body>  
+<script>
+'use strict';
+
+var mainApp = angular.module("mainApp", []);  
+mainApp.controller('contractRendererController',
+function contractRendererController($scope) {
+    // mainApp.controller("listHandlerController", function($scope, $q) {  
+        var user = { firstName: "", lastName: ""};  
+        // $scope.list = ["1", "2"];
+        $scope.list = [];
+        $scope.images = [];
+        
+        // console.log("hello world");
 
         $scope.returnData = function() {
             var x = $scope.list;
             return $scope.list;
         }
 
-        var win = function(data) {
+        $scope.getAssociatedImages = function(index) {
+            if($scope.images.length > 0) {
+
+                for(let i = 0; i < $scope.images.length; i++) {
+                    if($scope.images[i].index == index) {
+                        return $scope.images[i].link;
+                    }
+                }
+            } else{ 
+                return 0;
+            }
+        }
+
+        var processListResults = function(data) {
+            var processedList = [];
+            // console.log(data.length);
+            for(let i = 0; i < data.length; i++) {
+                var itemData = {};
+                // console.log(i);
+                // console.log(data[i]["ID"]);
+                itemData["ID"] = data[i]["ID"];
+                itemData["Title"] = data[i]["Title"];
+                itemData["SectionNo"] = data[i]["Section_x0020_No"];
+                itemData["SectionText"] = data[i]["Section_x0020_Text"];
+                itemData["SubSectionNo"] = data[i]["Subsection_x0020_Number"];
+                itemData["Created"] = data[i]["Created"];
+                // console.log(data[i].Attachments);
+                if(data[i]["Attachments"] == true) {
+                    console.log("image found" + data[i]["AttachmentFiles"]["__deferred"]["uri"]);
+                    itemData["Image"] =  data[i]["AttachmentFiles"]["__deferred"]["uri"];
+                }
+                // console.log(itemData);
+                processedList.push(itemData);
+            }
+                // console.log(processedList); 
+            return processedList;
+        }
+
+        var processImageResults = function(data) {
+            var processedList = [];
+            // console.log(data);
+            for(let i = 0; i < data.length; i++) {
+                // console.log(data[i]);
+                if(data[i]["AttachmentFiles"] && data[i]["AttachmentFiles"]["results"].length > 0) {
+                    let processedItem = {};
+                    for(let j = 0; j < data[i]["AttachmentFiles"]["results"].length; j++) {
+                        console.log(data[i]["AttachmentFiles"]["results"][j]["ServerRelativeUrl"]);
+                        // console.log(processedItem.length);
+                        processedItem["index"] = i;
+                        processedItem["link"] = data[i]["AttachmentFiles"]["results"][j]["ServerRelativeUrl"];    
+                    }
+                    processedList.push(processedItem);    
+                }
+            }
+            return processedList;
+        }
+
+        $scope.itemIsSubsection = function(item) {
+            return (item.indexOf('.0') !== -1)? false : true;
+        }
+
+        var setTextData = function(data) {
             // console.log("win");
             // console.log(data);
-            // $scope.list = data;
-            return data;
+            $scope.$apply(function() {
+                $scope.list = processListResults(data);
+            });
+            // console.log($scope.list);
+            return $scope.list;
+        }
+
+        var setImageData = function(data) {
+            // console.log("win");
+            console.log(data);
+            $scope.$apply(function() {
+                var images = processImageResults(data);
+                console.log(images);
+                $scope.images = images;
+            });
+            // console.log($scope.list);
+            return $scope.list;
         }
 
         var help = function() {
             console.log("help");
         }
-
-        $scope.getData = function($scope) {
-            // console.log(readList(help, win));
-            var d = $q.defer();
-            var a = readList(help, win).success(function(data) {
-                // console.log(data.d.results);
-                var t = processResults(data.d.results);
-                // console.log(t);
-                return t;
-            });
-            console.log(a);
-        }
-
-        var processResults = function(data) {
-            var processedList = [];
-            for(let i = 0; i < data.length; i++) {
-                // console.log(data[i]["ID"]);
-                processedList[i] = data[i]["ID"];
-            }
-            return processedList;
-        }
+        
         // $scope.list = $scope.getData();
         // console.log($scope.list);
 
         // });
         // readList(help, win);
     
-        $scope.readList = function($scope, complete, failure) {
+        var readList = function(complete, failure, rootURL, endpoint) {
             var value1 = {};
             // var deferred = $q.defer();
             // var rootURL = "https://jamesg.sharepoint.com/sites/test1/Lists";
-            var rootURL = "https://jamesg.sharepoint.com/sites/test1/";
             // var endpoint = "/_api/web/lists/GetByTitle('" + listname + "')/items?$filter= '" + fieldname + "' eq '" + fieldvalue;
             // var endpoint = "/_api/web/lists/'" + listname + "'/AllItems";
-            var endpoint = "_api/web/lists/GetByTitle('Contract1')/items";
             
-            return $.ajax({
+            $.ajax({
                 url: rootURL + endpoint,
                 // url: "https://jamesg.sharepoint.com/sites/test1/Lists/Contract1/DispForm.aspx?ID=1&e=jEQKdt",
                 async: true,
                 method: "GET",
                 headers: { "Accept": "application/json; odata=verbose" }, //Get verbose JSON format
-                success: function (data) {
-                    // console.log(Object.values(data)[0].results);
+                success: function(data) {
+                    // console.log(data);
                     if(Object.values(data)[0].results.length > 0) {
-                        // console.log("success!");
                         value1 = Object.values(data)[0].results;
-                        // console.log(value1);
-                        $scope.list = value1;
-                        console.log($scope.list);
                         complete(value1);
-                        
-                        // return deferred.promise;
-                        // return value1;
                     }
                 },
                 error: function(data) {
                     console.log(data);
-                    failure(data);
+                    // failure(data);
                 }
             });
-            // if(value1.length > 0) {
-            //     for(let i = 0; i < value1.length; i++) {
-            //     console.log(value1[i][0]);
-            // }
-            // }
             return (value1.length > 1)? value1.toString() : value1;
         }
-    // });
+
+        $scope.getImages = function($scope) {
+            console.log("hi");
+            var rootURL = "https://jamesg.sharepoint.com/sites/test1/";
+            // var endpoint = "_api/lists/GetByTitle('Contract1')/items?$filter=Id%20eq%202451&$select=Attachments,AttachmentFiles&$expand=AttachmentFiles";
+            var endpoint = "_api/lists/GetByTitle('Contract1')/items?$select=AttachmentFiles,Title,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles";
+            // var endpoint = "_api/web/lists/GetByTitle('Contract1')/RootFolder";
+            readList(setImageData, help, rootURL, endpoint); 
+        }
+
+        $scope.getData = function($scope) {
+            var rootURL = "https://jamesg.sharepoint.com/sites/test1/";
+            var endpoint = "_api/web/lists/GetByTitle('Contract1')/items";
+            readList(setTextData, help, rootURL, endpoint);
+        }
+        $scope.getImages();
+        $scope.getData();
     });
-    </script>  
-</body>  
+    // }
+// );
+</script>
 </html> 
